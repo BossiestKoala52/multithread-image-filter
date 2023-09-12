@@ -1,0 +1,3 @@
+/home/vboxuser/CLionProjects/Homework5/cmake-build-debug/CMakeFiles/Homework5.dir
+/home/vboxuser/CLionProjects/Homework5/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/vboxuser/CLionProjects/Homework5/cmake-build-debug/CMakeFiles/rebuild_cache.dir
