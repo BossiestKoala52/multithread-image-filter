@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD 14)
 include_directories(.)
 
 add_executable(Homework5
-        BaseFilters-1.c
+        JonesFilters.c
         BmpProcessor.h
         PixelProcessor.h
         BmpProcessor.c)
