@@ -63,8 +63,8 @@ void* blur(void* param) {
     startCol = filterData1->startCol;
     endCol = filterData1->endCol;
     height = filterData1->height;
-    printf("Thread number: %d\n", filterData1->threadNum);
-    printf("startCol: %d, endCol: %d\n\n", startCol, endCol);
+    //printf("Thread number: %d\n", filterData1->threadNum);
+    //printf("startCol: %d, endCol: %d\n\n", startCol, endCol);
 
 
 
@@ -178,8 +178,8 @@ void* swissCheese(void* param){
     height = cheeseData1->height;
     numHoles = cheeseData1->numHoles;
 
-    printf("Thread number: %d\n", cheeseData1->threadNum);
-    printf("startCol: %d, endCol: %d\n\n", startCol, endCol);
+    //printf("Thread number: %d\n", cheeseData1->threadNum);
+    //printf("startCol: %d, endCol: %d\n\n", startCol, endCol);
 
     for(int k = 0; k<numHoles;k++) {
         x = cheeseData1->holeDataArr[k]->x;
@@ -286,7 +286,7 @@ else if(strcmp(filter, "c") == 0){
 
 
 int radius = (int)randNormalDist(dibHeader->width);
-printf("numholes: %d\n sample radius: %d\n", numHoles1, radius);
+//printf("numholes: %d\n sample radius: %d\n", numHoles1, radius);
     srand(time(0));
     for(int i = 0; i<numHoles1; i++){
         globalHoleData[i] = malloc(sizeof (struct holeData));
