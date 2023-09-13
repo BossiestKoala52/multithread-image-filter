@@ -1,10 +1,12 @@
 /**
-* (basic description of the program or class)
+* This C program opens and reads a bmp file, applies an image blur filter or an image swiss cheese filter which
+ * is selected when run from the command line, and then saves the image. Input filename, output filename, and filter
+ * type are command line arguments.
 *
-* Completion time: (estimation of hours spent on this program)
+* Completion time: 12 hours
 *
-* @author (your name), (anyone else, e.g., Acuna, whose code you used)
-* @version (a version number or a date)
+* @author Nicholas Jones
+* @version 13SEP23
 */
 
 ////////////////////////////////////////////////////////////////////////////////
