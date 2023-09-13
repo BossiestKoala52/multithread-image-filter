@@ -73,6 +73,7 @@ build CMakeFiles/Homework5.dir/BmpProcessor.c.o: C_COMPILER__Homework5_unscanned
 
 build Homework5: C_EXECUTABLE_LINKER__Homework5_Debug CMakeFiles/Homework5.dir/BaseFilters-1.c.o CMakeFiles/Homework5.dir/BmpProcessor.c.o
   FLAGS = -g
+  LINK_LIBRARIES = -lm
   OBJECT_DIR = CMakeFiles/Homework5.dir
   POST_BUILD = :
   PRE_LINK = :

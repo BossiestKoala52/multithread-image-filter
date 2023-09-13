@@ -13,11 +13,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <math.h>
 #include <pthread.h>
 #include "BmpProcessor.h"
 #include "PixelProcessor.h"
-
-//TODO: finish me
 
 //UNCOMMENT BELOW LINE IF USING SER334 LIBRARY/OBJECT FOR BMP SUPPORT
 //#include "BmpProcessor.h"
@@ -32,23 +31,25 @@
 #define MAXIMUM_IMAGE_SIZE 4096
 #define THREAD_COUNT 4
 
-//TODO: finish me
-
-
 ////////////////////////////////////////////////////////////////////////////////
 //DATA STRUCTURES
 typedef struct BMP_Header BMP_Header;
 typedef struct DIB_Header DIB_Header;
 typedef struct Pixel Pixel;
-
+typedef struct holeData{
+    int y, x, radius;
+}holeData;
 typedef struct filterData {
     int startCol, endCol, height;
     int threadNum;
+    int numHoles;
     struct Pixel** pArr;
+    struct holeData** holeDataArr;
 } filterData;
-struct Pixel** globalImage;
-//TODO: finish me
 
+
+struct holeData** globalHoleData;
+struct Pixel** globalImage;
 
 ////////////////////////////////////////////////////////////////////////////////
 //MAIN PROGRAM CODE
@@ -132,9 +133,76 @@ void* blur(void* param) {
         }
         return 0;
     }
+void colorShiftPixels(struct Pixel** pArr, int width, int height, int rShift, int gShift, int bShift){
+    for(int i=0; i<height; i++) {
+        for (int j = 0; j < width; j++) {
+            if( (pArr[i][j].blue + bShift) > 255){
+                pArr[i][j].blue = 255;
+            }
+            else if( (pArr[i][j].blue + bShift) < 0){
+                pArr[i][j].blue = 0;
+            }
+            else{
+                pArr[i][j].blue += bShift;
+            }
+            if( (pArr[i][j].green + gShift) > 255){
+                pArr[i][j].green = 255;
+            }
+            else if((pArr[i][j].green + gShift) < 0){
+                pArr[i][j].green = 0;
+            }
+            else{
+                pArr[i][j].green += gShift;
+            }
+            if( (pArr[i][j].red + rShift) > 255){
+                pArr[i][j].red = 255;
+            }
+            else if( (pArr[i][j].red + rShift) < 0){
+                pArr[i][j].red = 0;
+            }
+            else{
+                pArr[i][j].red += rShift;
+            }
+        }
+    }
+}
 
+void* swissCheese(void* param){
+    int startCol, endCol, height, width, x, y, radius, numHoles;
 
-//TODO: finish me
+    filterData* cheeseData1 = (filterData*) param;
+    startCol = cheeseData1->startCol;
+    endCol = cheeseData1->endCol;
+    height = cheeseData1->height;
+    numHoles = cheeseData1->numHoles;
+
+    printf("Thread number: %d\n", cheeseData1->threadNum);
+    printf("startCol: %d, endCol: %d\n\n", startCol, endCol);
+
+    for(int k = 0; k<numHoles;k++) {
+        x = cheeseData1->holeDataArr[k]->x;
+        y = cheeseData1->holeDataArr[k]->y;
+        radius = cheeseData1->holeDataArr[k]->radius;
+        for (int i = 0; i < height; i++) {
+            for (int j = startCol; j < endCol; j++) {
+                double d = sqrt(((i - y)*(i - y)) + ((j-x)*(j-x)));
+                if(d < radius){
+                    globalImage[i][j].red = 0;
+                    globalImage[i][j].green = 0;
+                    globalImage[i][j].blue = 0;
+                }
+            }
+        }
+    }
+
+}
+
+double randNormalDist(int width){
+    return (int)(width * 0.1) + 5*((sqrt(-2 * log(((rand() + 1.0)/(RAND_MAX+1.0)))) * cos(2*M_PI*(rand() + 1.0)/(RAND_MAX+1.0))));
+}
+int randNum(){
+   return rand();
+}
 
 
 int main(int argc, char* argv[]) {
@@ -174,21 +242,15 @@ int main(int argc, char* argv[]) {
 
     readBMPHeader(file_input, bmpHeader);
     readDIBHeader(file_input, dibHeader);
-    globalImage = malloc(dibHeader->height * sizeof(struct Pixel*));
-
-
-    filterData *filterData1 = (struct filterData*)malloc(sizeof(struct filterData) * THREAD_COUNT);
-
 
     globalImage = (struct Pixel **) malloc(sizeof(struct Pixel *) * dibHeader->width);
-    for(int i = 0; i < dibHeader->width; i++){
-        globalImage[i] = malloc(sizeof (struct Pixel) * dibHeader->height);
-    }
+
 
     readPixelsBMP(file_input, globalImage, dibHeader->width, dibHeader->height);
     fclose(file_input);
 
 if(strcmp(filter, "b") == 0) {
+    filterData *filterData1 = (struct filterData*)malloc(sizeof(struct filterData) * THREAD_COUNT);
     pthread_t tids[THREAD_COUNT];
     int colWidth = dibHeader->width / THREAD_COUNT;
 
@@ -202,7 +264,7 @@ if(strcmp(filter, "b") == 0) {
         filterData1[i].endCol = ((i + 1) * colWidth);
         filterData1[i].pArr = (struct Pixel **) malloc(sizeof(struct Pixel *) * dibHeader->height);
         for (int j = 0; j < dibHeader->height; j++) {
-            filterData1[i].pArr[j] = malloc(sizeof(struct Pixel) * dibHeader->width);
+            filterData1[i].pArr[j] = malloc(sizeof(struct Pixel) * (dibHeader->width));
         }
     }
 
@@ -213,9 +275,53 @@ if(strcmp(filter, "b") == 0) {
     for (int i = 0; i < THREAD_COUNT; i++) {
         pthread_join(tids[i], NULL);
     }
+    free(filterData1);
 }
 else if(strcmp(filter, "c") == 0){
+    int numHoles1 = (int)dibHeader->width * 0.1;
+    globalHoleData = (struct holeData **) malloc(sizeof(struct holeData *) * numHoles1);
+    filterData *filterData1 = (struct filterData*) malloc(sizeof(struct filterData) * THREAD_COUNT);
 
+
+int radius = (int)randNormalDist(dibHeader->width);
+printf("numholes: %d\n sample radius: %d\n", numHoles1, radius);
+    srand(time(0));
+    for(int i = 0; i<numHoles1; i++){
+        globalHoleData[i] = malloc(sizeof (struct holeData));
+
+        globalHoleData[i]->y = randNum() % (dibHeader->height + 1);
+        globalHoleData[i]->x = randNum() % (dibHeader->width + 1);
+        globalHoleData[i]->radius = (int)randNormalDist(dibHeader->width);
+
+    }
+    colorShiftPixels(globalImage, dibHeader->width, dibHeader->height, 50, 50, 0);
+    pthread_t tids[THREAD_COUNT];
+    int colWidth = dibHeader->width / THREAD_COUNT;
+
+    for (int i = 0; i < THREAD_COUNT; i++) {
+        filterData1[i].height = dibHeader->height;
+        filterData1[i].threadNum = i;
+        filterData1[i].startCol = i * colWidth;
+
+
+        filterData1[i].endCol = ((i + 1)  * colWidth);
+        filterData1[i].holeDataArr = (struct holeData **) malloc(sizeof(struct holeData*) * numHoles1);
+        filterData1[i].numHoles = 0;
+        for (int j = 0; j < numHoles1; j++) {
+           if(((globalHoleData[j]->radius + globalHoleData[j]->x) >= filterData1->startCol && globalHoleData[j]->x <= filterData1->endCol) || ((globalHoleData[j]->radius - globalHoleData[j]->x) <= filterData1->endCol && globalHoleData[j]->x >= filterData1->startCol)){
+               filterData1[i].holeDataArr[j] = globalHoleData[j];
+               filterData1[i].numHoles++;
+           }
+        }
+    }
+
+    for (int i = 0; i < THREAD_COUNT; i++) {
+        pthread_create(&tids[i], NULL, swissCheese, &filterData1[i]);
+    }
+    for (int i = 0; i < THREAD_COUNT; i++) {
+        pthread_join(tids[i], NULL);
+    }
+    free(filterData1);
 }
 
     FILE* file_output = fopen(fileNameOut, "wb");
@@ -224,6 +330,10 @@ else if(strcmp(filter, "c") == 0){
     writeDIBHeader(file_output, dibHeader);
     writePixelsBMP(file_output, globalImage, dibHeader->width, dibHeader->height);
     fclose(file_output);
-	//TODO: finish me
+    free(dibHeader);
+    free(bmpHeader);
+    free(globalImage);
+    free(globalHoleData);
+
 
 }
